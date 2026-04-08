@@ -1,142 +1,177 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>AURA AI v2.0</title>
-</head>
+<meta charset="UTF-8">
+<title>AURA AI v2.0</title>
+<style>
+    /* ---------- Body & Background ---------- */
+    body {
+        font-family: "Segoe UI", sans-serif;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        text-align: center;
+        color: #e2e8f0;
+        background: linear-gradient(-45deg, #0a0d14, #131722, #1a1d27, #0a0d14);
+        background-size: 400% 400%;
+        animation: gradientBG 20s ease infinite;
+    }
 
-<body style="
-    font-family: Segoe UI, sans-serif;
-    background: #0a0d14;
-    color: #e2e8f0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    flex-direction: column;
-    gap: 16px;
-    text-align: center;
-">
+    @keyframes gradientBG {
+        0%{background-position:0% 50%;}
+        50%{background-position:100% 50%;}
+        100%{background-position:0% 50%;}
+    }
 
-    <!-- Logo -->
-    <div style="font-size: 60px;">🎓</div>
+    /* ---------- Logo ---------- */
+    .logo {
+        font-size: 60px;
+        display: inline-block;
+        animation: bounce 2s infinite;
+        text-shadow: 0 0 10px #7c6df0;
+    }
 
-    <!-- Title -->
-    <h1 style="
+    @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+        40% { transform: translateY(-15px); }
+        60% { transform: translateY(-8px); }
+    }
+
+    /* ---------- Titles ---------- */
+    h1 {
         color: #7c6df0;
-        font-size: 28px;
-    ">
-        AURA AI v2.0
-    </h1>
+        font-size: 32px;
+        margin: 8px 0;
+        animation: fadeIn 1s ease forwards;
+    }
 
-    <!-- Subtitle -->
-    <p style="
+    .subtitle {
         color: #718096;
         font-size: 14px;
-    ">
-        AI-Powered Exam Proctoring System
-    </p>
+        margin: 4px 0;
+        animation: fadeIn 1.2s ease forwards;
+    }
+
+    .tech-stack span {
+        display: inline-block;
+        margin: 0 4px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: rgba(124,109,240,0.2);
+        color: #7c6df0;
+        animation: techHighlight 1.5s infinite alternate;
+    }
+
+    @keyframes techHighlight {
+        0% { background: rgba(124,109,240,0.2); }
+        100% { background: rgba(124,109,240,0.6); }
+    }
+
+    /* ---------- Buttons ---------- */
+    .nav-buttons {
+        display: flex;
+        gap: 12px;
+        margin-top: 16px;
+        flex-wrap: wrap;
+        justify-content: center;
+        animation: fadeIn 1.5s ease forwards;
+    }
+
+    .nav-buttons a {
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 14px;
+        text-decoration: none;
+        color: #fff;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .nav-buttons a.student {
+        background: #7c6df0;
+    }
+
+    .nav-buttons a.admin,
+    .nav-buttons a.docs {
+        background: #1a1d27;
+        border: 1px solid #2d3748;
+    }
+
+    .nav-buttons a:hover {
+        transform: translateY(-4px) scale(1.05);
+        box-shadow: 0 6px 15px rgba(124,109,240,0.7);
+    }
+
+    /* ---------- Footer ---------- */
+    .footer-info {
+        margin-top: 24px;
+        background-color: #1a1d27;
+        border: 1px solid #2d3748;
+        border-radius: 16px;
+        padding: 18px 28px;
+        font-size: 12px;
+        color: #718096;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        max-width: 500px;
+        animation: fadeIn 2s ease forwards;
+    }
+
+    .footer-note {
+        font-size: 10px;
+        color: #4a5568;
+        margin-top: 8px;
+        animation: fadeIn 2.5s ease forwards;
+    }
+
+    /* ---------- Animations ---------- */
+    @keyframes fadeIn {
+        0% { opacity: 0; transform: translateY(10px);}
+        100% { opacity: 1; transform: translateY(0);}
+    }
+</style>
+</head>
+<body>
+
+    <!-- Logo -->
+    <div class="logo">🎓</div>
+
+    <!-- Title -->
+    <h1>AURA AI v2.0</h1>
+
+    <!-- Subtitle -->
+    <p class="subtitle">AI-Powered Exam Proctoring System</p>
 
     <!-- Tech Stack -->
-    <p style="
-        color: #4a5568;
-        font-size: 12px;
-    ">
-        DSA: Trie • Deque • Graph+BFS • Max-Heap • Sliding Window • Hash Map
+    <p class="tech-stack">
+        <span>Trie</span>
+        <span>Deque</span>
+        <span>Graph+BFS</span>
+        <span>Max-Heap</span>
+        <span>Sliding Window</span>
+        <span>Hash Map</span>
     </p>
 
     <!-- Navigation Buttons -->
-    <div style="
-        display: flex;
-        gap: 12px;
-        margin-top: 12px;
-        flex-wrap: wrap;
-        justify-content: center;
-    ">
-
-        <a href="/student" style="
-            background: #7c6df0;
-            color: #ffffff;
-            padding: 12px 24px;
-            border-radius: 10px;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 14px;
-        ">
-            🎓 Student Portal
-        </a>
-
-        <a href="/admin" style="
-            background: #1a1d27;
-            color: #ffffff;
-            padding: 12px 24px;
-            border-radius: 10px;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 14px;
-            border: 1px solid #2d3748;
-        ">
-            🛡️ Admin Dashboard
-        </a>
-
-        <a href="/docs" style="
-            background: #1a1d27;
-            color: #ffffff;
-            padding: 12px 24px;
-            border-radius: 10px;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 14px;
-            border: 1px solid #2d3748;
-        ">
-            📖 API Docs
-        </a>
-
+    <div class="nav-buttons">
+        <a href="/student" class="student">🎓 Student Portal</a>
+        <a href="/admin" class="admin">🛡️ Admin Dashboard</a>
+        <a href="/docs" class="docs">📖 API Docs</a>
     </div>
 
     <!-- Footer Info -->
-    <div style="
-        margin-top: 20px;
-        background: #1a1d27;
-        border: 1px solid #2d3748;
-        border-radius: 12px;
-        padding: 16px 24px;
-        font-size: 12px;
-        color: #718096;
-    ">
-        5 Exam Types: General Aptitude • DSA &amp; Algorithms • Python Coding • Mathematics • Computer Science
+    <div class="footer-info">
+        5 Exam Types: General Aptitude • DSA & Algorithms • Python Coding • Mathematics • Computer Science
+    </div>
+
+    <!-- Footer Note -->
+    <div class="footer-note">
+        © 2026 AURA AI • Version 2.0
     </div>
 
 </body>
 </html>
-
-
-<!-- <!DOCTYPE html>
-<html>
-  <body style='font-family:Segoe UI,sans-serif;
-    background:#0a0d14;color:#e2e8f0;display:flex;align-items:center;
-    justify-content:center;min-height:100vh;flex-direction:column;gap:16px;text-align:center'>
-    <div style='font-size:60px'>🎓</div>
-    <h1 style='color:#7c6df0;font-size:28px'>AURA AI v2.0</h1>
-    <p style='color:#718096;font-size:14px'>AI-Powered Exam Proctoring System</p>
-    <p style='color:#4a5568;font-size:12px'>DSA: Trie • Deque • Graph+BFS • Max-Heap • Sliding Window • Hash Map</p>
-    <div style='display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;justify-content:center'>
-      <a href='/student' style='background:#7c6df0;color:#fff;padding:12px 24px;
-        border-radius:10px;text-decoration:none;font-weight:700;font-size:14px'>
-        🎓 Student Portal</a>
-      <a href='/admin' style='background:#1a1d27;color:#fff;padding:12px 24px;
-        border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;
-        border:1px solid #2d3748'>
-        🛡️ Admin Dashboard</a>
-      <a href='/docs' style='background:#1a1d27;color:#fff;padding:12px 24px;
-        border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;
-        border:1px solid #2d3748'>
-        📖 API Docs</a>
-    </div>
-    <div style='margin-top:20px;background:#1a1d27;border:1px solid #2d3748;
-      border-radius:12px;padding:16px 24px;font-size:12px;color:#718096'>
-      5 Exam Types: General Aptitude • DSA &amp; Algorithms • Python Coding • Mathematics • Computer Science
-    </div>
-    </body>
-    
-</html> -->
