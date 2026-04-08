@@ -1,6 +1,6 @@
 # AURA AI v2.0 — Exam Proctoring System (FastAPI)
 
-Single-file, production-style **AI-powered exam proctoring** app with a built-in **Student Portal** + **Admin Dashboard**, real-time WebSocket events, and a SQLite database.
+**AI-powered exam proctoring** app with a built-in **Student Portal** + **Admin Dashboard**, real-time WebSocket events, and a SQLite database.
 
 ## Quick start
 
