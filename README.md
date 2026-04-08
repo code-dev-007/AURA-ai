@@ -84,6 +84,35 @@ DSA concepts implemented (see `app.py` header):
   - Client sends JSON like: `{"event":"tab_switch","details":"...","timestamp":<unix_seconds>}`
 - **Admin live channel**: `ws://localhost:8000/ws/admin/live`
 
+
+## ⚙️ Configuration
+
+This project uses environment variables for configuration.
+
+Create a `.env` file in the root directory and add the following:
+
+```env
+# ═══════════════════════════════════════════════════════
+# AURA AI PROCTOR EXAM CONFIGURATION (DO NOT USE REAL VALUES)
+# ═══════════════════════════════════════════════════════
+
+# Database
+DATABASE_URL=sqlite:///aura_v2.db
+
+# JWT Authentication
+SECRET_KEY=your_secret_key_here
+ALGORITHM=
+TOKEN_HOURS=
+
+# API
+API_URL=http://localhost:8000
+
+# Server
+HOST=0.0.0.0
+PORT=8000
+RELOAD=true
+
+
 ## Notes
 - The server runs on **port 8000** and uses Uvicorn with `reload=True` when started via `python app.py`.
 - Proctoring webcam analysis is implemented with **OpenCV Haar cascades** (face) plus lightweight heuristics (e.g., phone-like rectangle detection).
