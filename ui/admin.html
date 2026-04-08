@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><title>Aura AI v2 — Admin</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#0a0d14;color:#e2e8f0;display:flex;height:100vh;overflow:hidden}
+:root{--p:#7c6df0;--g:#48bb78;--r:#fc8181;--o:#f6ad55;--b:#63b3ed;--bg:#1a1d27;--bg2:#141620;--bd:#2d3748}
+.sidebar{width:200px;background:var(--bg);border-right:1px solid var(--bd);
+  display:flex;flex-direction:column;flex-shrink:0}
+.s-logo{padding:18px;font-size:15px;font-weight:800;color:var(--p);border-bottom:1px solid var(--bd)}
+.s-logo span{font-size:11px;color:#718096;display:block;font-weight:400;margin-top:2px}
+.nav-item{padding:12px 18px;font-size:13px;cursor:pointer;color:#a0aec0;
+  transition:.2s;display:flex;align-items:center;gap:10px;border-left:3px solid transparent}
+.nav-item:hover{background:rgba(124,109,240,.08);color:#e2e8f0}
+.nav-item.on{background:rgba(124,109,240,.12);color:var(--p);border-left-color:var(--p);font-weight:600}
+.s-status{padding:16px;margin-top:auto;border-top:1px solid var(--bd)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--g);
+  display:inline-block;margin-right:6px;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:var(--bg);border-bottom:1px solid var(--bd);padding:12px 22px;
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.tb-title{font-size:16px;font-weight:700}
+.btn{background:var(--p);color:#fff;border:none;border-radius:8px;
+  padding:8px 16px;cursor:pointer;font-size:12px;font-weight:600}
+.btn:hover{background:#6c5ce7}.btn.gr{background:var(--g)}.btn.dk{background:var(--bd)}
+.content{flex:1;overflow-y:auto;padding:20px}
+.tab-page{display:none}.tab-page.on{display:block}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.stat{background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:16px}
+.stat-lbl{font-size:10px;color:#718096;text-transform:uppercase;letter-spacing:.4px}
+.stat-val{font-size:26px;font-weight:800;margin-top:4px}
+.stat-val.p{color:var(--p)}.stat-val.g{color:var(--g)}
+.stat-val.r{color:var(--r)}.stat-val.o{color:var(--o)}
+
+/* Table */
+.tbl-wrap{background:var(--bg);border:1px solid var(--bd);border-radius:12px;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead{background:var(--bg2)}
+th{padding:11px 14px;text-align:left;font-size:10px;color:#718096;
+  text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+td{padding:12px 14px;font-size:13px;border-top:1px solid var(--bd)}
+tr:hover{background:rgba(124,109,240,.04)}
+tr.ch{background:rgba(252,129,129,.04)}tr.su{background:rgba(246,173,85,.04)}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700}
+.bc{background:rgba(252,129,129,.2);color:var(--r)}
+.bg{background:rgba(72,187,120,.2);color:var(--g)}
+.bo{background:rgba(246,173,85,.2);color:var(--o)}
+.bar-w{display:flex;align-items:center;gap:6px}
+.bar{height:5px;border-radius:3px;flex:1;background:var(--bd);overflow:hidden}
+.bf{height:100%;border-radius:3px}
+.bf.r{background:var(--r)}.bf.o{background:var(--o)}.bf.g{background:var(--g)}
+
+/* Log */
+.log-box{background:var(--bg);border:1px solid var(--bd);border-radius:12px;
+  padding:16px;max-height:320px;overflow-y:auto;margin-top:16px}
+.le{font-size:11px;font-family:monospace;padding:5px 0;
+  border-bottom:1px solid var(--bd);display:flex;gap:10px;align-items:center}
+.lt{color:#718096;min-width:70px}.ln{color:var(--p);min-width:120px;font-weight:700}
+.lv{color:var(--r)}.lk{color:var(--g)}
+
+/* Exam selector */
+.ctrl{display:flex;gap:10px;margin-bottom:16px;align-items:center}
+select{background:var(--bg);border:1px solid var(--bd);color:#e2e8f0;
+  border-radius:8px;padding:9px 14px;font-size:13px}
+.report-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.rc{background:var(--bg);border:1px solid var(--bd);border-radius:14px;overflow:hidden}
+.rc.ch{border-top:3px solid var(--r)}.rc.cl{border-top:3px solid var(--g)}
+.rh{padding:14px 16px 10px;display:flex;align-items:center;justify-content:space-between}
+.av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-weight:800;font-size:13px;margin-right:10px;flex-shrink:0}
+.av.ch{background:rgba(252,129,129,.2);color:var(--r)}
+.av.cl{background:rgba(72,187,120,.2);color:var(--g)}
+.sg{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--bd)}
+.si{padding:9px;text-align:center}
+.sn{font-size:16px;font-weight:800}.sl{font-size:9px;color:#718096;text-transform:uppercase}
+.rf{padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+.sec-title{font-size:14px;font-weight:700;color:#a0aec0;
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.empty{text-align:center;padding:50px;color:#718096}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="s-logo">🎓 AURA AI<span>Admin Dashboard v2</span></div>
+  <div class="nav-item on" onclick="nav('live',this)">🔴 Live Monitor</div>
+  <div class="nav-item" onclick="nav('reports',this)">📊 Exam Reports</div>
+  <div class="nav-item" onclick="nav('students',this)">👥 All Students</div>
+  <div class="nav-item" onclick="nav('leaderboard',this)">🏆 Leaderboard</div>
+  <div class="nav-item" onclick="nav('clusters',this)">🕸️ Clusters</div>
+  <div class="s-status">
+    <div style="font-size:12px;color:#718096">
+      <span class="dot"></span><span id="wst">Connecting...</span>
+    </div>
+    <div style="font-size:11px;color:#4a5568;margin-top:6px">Login: admin / admin123</div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div class="tb-title" id="pg-title">🔴 Live Monitor</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn dk" onclick="refresh()">↻ Refresh</button>
+      <button class="btn gr" onclick="exportData()">⬇ Export</button>
+    </div>
+  </div>
+  <div class="content">
+
+    <!-- LIVE -->
+    <div class="tab-page on" id="tp-live">
+      <div class="stats">
+        <div class="stat"><div class="stat-lbl">Total Live</div><div class="stat-val p" id="s1">0</div></div>
+        <div class="stat"><div class="stat-lbl">Cheaters</div><div class="stat-val r" id="s2">0</div></div>
+        <div class="stat"><div class="stat-lbl">Suspects</div><div class="stat-val o" id="s3">0</div></div>
+        <div class="stat"><div class="stat-lbl">Clean</div><div class="stat-val g" id="s4">0</div></div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Student</th><th>Exam</th><th>Tabs</th><th>Face</th>
+            <th>Phone</th><th>Head</th><th>Score</th><th>Status</th>
+          </tr></thead>
+          <tbody id="live-tbody">
+            <tr><td colspan="8" class="empty">Waiting for students to join...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="log-box" id="event-log">
+        <div class="le"><span class="lt">--:--:--</span>
+          <span class="ln">System</span><span class="lk">Aura AI v2 ready...</span></div>
+      </div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="tab-page" id="tp-reports">
+      <div class="ctrl">
+        <select id="exam-sel"><option value="">Select Exam...</option></select>
+        <button class="btn" onclick="loadReport()">Load Report</button>
+      </div>
+      <div id="report-summary" style="display:none" class="stats" style="grid-template-columns:repeat(4,1fr)">
+        <div class="stat"><div class="stat-lbl">Students</div><div class="stat-val p" id="rs1">0</div></div>
+        <div class="stat"><div class="stat-lbl">Cheaters</div><div class="stat-val r" id="rs2">0</div></div>
+        <div class="stat"><div class="stat-lbl">Clean</div><div class="stat-val g" id="rs3">0</div></div>
+        <div class="stat"><div class="stat-lbl">Exam</div>
+          <div class="stat-val p" style="font-size:13px;margin-top:6px" id="rs4">—</div></div>
+      </div>
+      <div class="report-grid" id="report-cards"></div>
+      <div class="empty" id="report-empty">Select an exam and click Load Report</div>
+    </div>
+
+    <!-- STUDENTS -->
+    <div class="tab-page" id="tp-students">
+      <div class="sec-title">All Registered Students</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Name</th><th>Student ID</th><th>College</th>
+            <th>Branch</th><th>Total Exams</th><th>Last Verdict</th>
+          </tr></thead>
+          <tbody id="students-tbody">
+            <tr><td colspan="6" class="empty">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LEADERBOARD -->
+    <div class="tab-page" id="tp-leaderboard">
+      <div class="sec-title">Violation Score Leaderboard (Max-Heap Ranked)</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Student</th><th>Score</th><th>Verdict</th></tr></thead>
+          <tbody id="lb-tbody"><tr><td colspan="4" class="empty">No data yet</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CLUSTERS -->
+    <div class="tab-page" id="tp-clusters">
+      <div class="sec-title">BFS Cluster Detection — Coordinated Cheating Groups</div>
+      <div id="cluster-content"><div class="empty">Loading cluster analysis...</div></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API='http://localhost:8000';
+let ws=null,liveData={},currentReport=null;
+
+function nav(name,el){
+  document.querySelectorAll('.tab-page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('on'));
+  document.getElementById('tp-'+name).classList.add('on');
+  el.classList.add('on');
+  document.getElementById('pg-title').textContent=el.textContent.trim();
+  if(name==='students')loadStudents();
+  else if(name==='leaderboard')loadLeaderboard();
+  else if(name==='clusters')loadClusters();
+}
+
+/* Live WebSocket */
+function connectWS(){
+  ws=new WebSocket('ws://localhost:8000/ws/admin/live');
+  ws.onopen=()=>setStatus('Live ✓');
+  ws.onmessage=msg=>{
+    const d=JSON.parse(msg.data);
+    if(d.type==='connected')return;
+    liveData[d.student_id]=d;renderLive();addLog(d);
+  };
+  ws.onclose=()=>{setStatus('Reconnecting...');setTimeout(connectWS,3000);};
+}
+function setStatus(s){document.getElementById('wst').textContent=s;}
+
+function renderLive(){
+  const rows=Object.values(liveData);
+  let ch=0,su=0,cl=0;
+  document.getElementById('live-tbody').innerHTML=rows.length?rows.map(d=>{
+    const sc=d.total_score||0,pct=Math.min(sc*4,100);
+    const cls=sc>=15?'ch':sc>=8?'su':'';
+    const bc=sc>=15?'bc':sc>=8?'bo':'bg';
+    const fc=sc>=15?'r':sc>=8?'o':'g';
+    const lb=sc>=15?'CHEATER':sc>=8?'SUSPECT':'CLEAN';
+    if(sc>=15)ch++;else if(sc>=8)su++;else cl++;
+    return `<tr class="${cls}">
+      <td><strong>${d.student_name||'?'}</strong></td>
+      <td><span style="color:#718096;font-size:11px">Active</span></td>
+      <td>${d.tab_switches||0}</td><td>${d.face_missing||0}</td>
+      <td>${d.phone_detected||0}</td><td>${d.head_turns||0}</td>
+      <td><div class="bar-w">
+        <div class="bar"><div class="bf ${fc}" style="width:${pct}%"></div></div>
+        <strong>${sc}</strong>
+      </div></td>
+      <td><span class="badge ${bc}">${lb}</span></td>
+    </tr>`;
+  }).join(''):`<tr><td colspan="8" class="empty">Waiting for students...</td></tr>`;
+  document.getElementById('s1').textContent=rows.length;
+  document.getElementById('s2').textContent=ch;
+  document.getElementById('s3').textContent=su;
+  document.getElementById('s4').textContent=cl;
+}
+
+function addLog(d){
+  const log=document.getElementById('event-log');
+  const t=new Date().toTimeString().slice(0,8);
+  const v=(d.new_violations||[]).join(', ')||d.event||'event';
+  const bad=(d.new_violations||[]).length>0;
+  const el=document.createElement('div');el.className='le';
+  el.innerHTML=`<span class="lt">${t}</span>
+    <span class="ln">${d.student_name||'?'}</span>
+    <span class="${bad?'lv':'lk'}">${v}</span>
+    <span style="color:#718096;margin-left:auto">score:${d.total_score||0}</span>`;
+  log.insertBefore(el,log.firstChild);
+  if(log.children.length>100)log.removeChild(log.lastChild);
+}
+
+/* Reports */
+async function loadExams(){
+  const r=await fetch(`${API}/exams`);
+  const exams=await r.json();
+  const sel=document.getElementById('exam-sel');
+  exams.forEach(e=>{
+    const o=document.createElement('option');o.value=e.id;
+    o.textContent=`${e.category} — ${e.title}`;sel.appendChild(o);
+  });
+}
+
+async function loadReport(){
+  const eid=document.getElementById('exam-sel').value;
+  if(!eid)return alert('Select an exam first');
+  const r=await fetch(`${API}/admin/report/${eid}`);
+  currentReport=await r.json();
+  renderReport(currentReport);
+}
+
+function renderReport(d){
+  document.getElementById('report-empty').style.display='none';
+  const rs=document.getElementById('report-summary');
+  rs.style.display='grid';rs.style.gridTemplateColumns='repeat(4,1fr)';
+  document.getElementById('rs1').textContent=d.total_students;
+  document.getElementById('rs2').textContent=d.cheaters_count;
+  document.getElementById('rs3').textContent=d.clean_count;
+  document.getElementById('rs4').textContent=d.exam_title;
+  const c=document.getElementById('report-cards');
+  if(!d.reports||!d.reports.length){
+    c.innerHTML='<div class="empty">No students completed this exam yet.</div>';return;
+  }
+  c.innerHTML=d.reports.map(r=>reportCard(r)).join('');
+}
+
+function reportCard(r){
+  const ch=r.is_cheater,cls=ch?'ch':'cl';
+  const ini=(r.student_name||'U').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const sc=r.total_score||0;
+  const passed=r.exam_score>=(r.pass_marks||40);
+  return `<div class="rc ${cls}">
+    <div class="rh">
+      <div style="display:flex;align-items:center">
+        <div class="av ${cls}">${ini}</div>
+        <div>
+          <div style="font-weight:700;font-size:14px">${r.student_name}</div>
+          <div style="font-size:11px;color:#718096">${r.student_code} • ${r.college||''}</div>
+          <div style="font-size:11px;color:#718096">${r.branch||''} • ${r.duration||'N/A'}</div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <span class="badge ${ch?'bc':'bg'}">${r.verdict}</span>
+        <div style="font-size:10px;color:#718096;margin-top:4px">
+          Score: ${r.exam_score}/${r.total_marks}
+          <span style="color:${passed?'#48bb78':'#fc8181'}">(${passed?'PASS':'FAIL'})</span>
+        </div>
+      </div>
+    </div>
+    <div class="sg">
+      <div class="si"><div class="sn" style="color:#fc8181">${r.tab_switches}</div><div class="sl">Tabs</div></div>
+      <div class="si"><div class="sn" style="color:#f6ad55">${r.minimizes}</div><div class="sl">Mins</div></div>
+      <div class="si"><div class="sn" style="color:#63b3ed">${r.face_missing}</div><div class="sl">Face</div></div>
+      <div class="si"><div class="sn" style="color:#fc8181">${r.multiple_faces}</div><div class="sl">Multi</div></div>
+      <div class="si"><div class="sn" style="color:#fc8181">${r.phone_detected}</div><div class="sl">Phone</div></div>
+      <div class="si"><div class="sn" style="color:#f6ad55">${r.head_turns}</div><div class="sl">Head</div></div>
+    </div>
+    <div class="rf">
+      <div>
+        <div style="font-size:10px;color:#718096">VIOLATION SCORE</div>
+        <div style="font-size:22px;font-weight:800;color:${ch?'#fc8181':'#48bb78'}">${sc} pts</div>
+      </div>
+      <div style="font-size:11px;color:#718096;text-align:right">
+        <div>${r.exam_category}</div>
+        <div>${r.started_at}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* Students */
+async function loadStudents(){
+  const r=await fetch(`${API}/admin/students`);
+  const students=await r.json();
+  document.getElementById('students-tbody').innerHTML=students.length
+    ?students.map(s=>`<tr>
+        <td><strong>${s.name}</strong></td>
+        <td style="color:#718096;font-family:monospace">${s.student_code}</td>
+        <td>${s.college||'—'}</td><td>${s.branch||'—'}</td>
+        <td>${s.total_exams}</td>
+        <td><span class="badge ${s.last_verdict==='CHEATER'?'bc':s.last_verdict==='NOT CHEATER'?'bg':'bo'}">
+          ${s.last_verdict}</span></td>
+      </tr>`).join('')
+    :`<tr><td colspan="6" class="empty">No students registered yet</td></tr>`;
+}
+
+/* Leaderboard */
+async function loadLeaderboard(){
+  const r=await fetch(`${API}/admin/leaderboard`);
+  const data=await r.json();
+  document.getElementById('lb-tbody').innerHTML=data.length
+    ?data.map((s,i)=>`<tr>
+        <td><strong style="color:${i<3?'#f6ad55':'#718096'}">${i+1}</strong></td>
+        <td><strong>${s.name}</strong></td>
+        <td><strong style="color:${s.score>=15?'#fc8181':'#48bb78'}">${s.score}</strong></td>
+        <td><span class="badge ${s.verdict==='CHEATER'?'bc':'bg'}">${s.verdict}</span></td>
+      </tr>`).join('')
+    :`<tr><td colspan="4" class="empty">No exam data yet</td></tr>`;
+}
+
+/* Clusters */
+async function loadClusters(){
+  const r=await fetch(`${API}/admin/clusters`);
+  const data=await r.json();
+  const el=document.getElementById('cluster-content');
+  if(!data.length){
+    el.innerHTML='<div class="empty">✅ No coordinated cheating clusters detected</div>';return;
+  }
+  el.innerHTML=data.map((cluster,i)=>`
+    <div style="background:rgba(252,129,129,.06);border:1px solid rgba(252,129,129,.2);
+      border-radius:12px;padding:16px;margin-bottom:12px">
+      <div style="font-weight:700;color:#fc8181;margin-bottom:8px">
+        ⚠️ Cluster ${i+1} — ${cluster.length} students
+      </div>
+      ${cluster.map(s=>`<div style="padding:6px 0;border-bottom:1px solid #2d3748;
+        display:flex;justify-content:space-between;font-size:13px">
+        <span>${s.name}</span>
+        <span style="color:#fc8181;font-weight:700">${s.score} pts</span>
+      </div>`).join('')}
+    </div>`).join('');
+}
+
+async function refresh(){
+  const r=await fetch(`${API}/admin/live`);
+  const rows=await r.json();
+  liveData={};
+  rows.forEach(d=>liveData[d.student_id]={
+    student_id:d.student_id,student_name:d.student_name,
+    total_score:d.score,tab_switches:d.tab_switches,
+    minimizes:d.minimizes,face_missing:d.face_missing,
+    phone_detected:d.phone_det,head_turns:d.head_turns,
+  });
+  renderLive();
+}
+
+function exportData(){
+  if(!currentReport)return alert('Load a report first from Exam Reports tab');
+  const b=new Blob([JSON.stringify(currentReport,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);
+  a.download=`aura-report-${Date.now()}.json`;a.click();
+}
+
+connectWS();loadExams();refresh();setInterval(refresh,8000);
+</script>
+</body>
+</html>
