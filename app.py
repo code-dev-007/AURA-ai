@@ -155,10 +155,16 @@ pwd_context   = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__roun
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 def hash_password(p: str) -> str:
+    # bcrypt limit is 72 *bytes* (not characters). Enforce to avoid runtime 500s.
+    if len(p.encode("utf-8")) > 72:
+        raise HTTPException(400, "Password too long (max 72 bytes). Use a shorter password.")
     return pwd_context.hash(p[:72])
 
 def verify_password(p: str, h: str) -> bool:
-    try:    return pwd_context.verify(p[:72], h)
+    try:
+        if len(p.encode("utf-8")) > 72:
+            return False
+        return pwd_context.verify(p, h)
     except: return False
 
 def create_token(data: dict) -> str:
