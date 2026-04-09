@@ -41,13 +41,14 @@ except Exception:
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
 from sqlalchemy import create_engine, Column, String, Integer, Boolean, DateTime, ForeignKey, Text
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship, Session
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
 import uvicorn
+
+from routes import RouteDeps, register_routes
 
 # ═══════════════════════════════════════════════════════════════════════
 # SECTION 1 — DATABASE
@@ -763,202 +764,6 @@ app = FastAPI(title="Aura AI v2.0", version="2.0.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"],
                    allow_methods=["*"], allow_headers=["*"], allow_credentials=True)
 
-# ── Schemas ────────────────────────────────────────────────────
-class SignupReq(BaseModel):
-    name:str; email:str; student_code:str; password:str
-    college:Optional[str]=""; branch:Optional[str]=""; semester:Optional[str]=""
-
-class LoginReq(BaseModel):
-    email:str; password:str
-
-class AdminLoginReq(BaseModel):
-    username:str; password:str
-
-class ExamStartReq(BaseModel):
-    exam_id:str
-
-class FrameReq(BaseModel):
-    frame_b64:str; student_id:str; session_id:str
-
-class SubmitAnswersReq(BaseModel):
-    answers: dict   # {question_id: selected_option_index}
-    exam_id: str
-
-class CreateExamReq(BaseModel):
-    title:str; category:Optional[str]="General"
-    description:Optional[str]=""; duration_min:Optional[int]=60
-    total_marks:Optional[int]=100; pass_marks:Optional[int]=40
-
-# ── Auth ────────────────────────────────────────────────────────
-@app.post("/auth/signup")
-async def signup(req:SignupReq, db:Session=Depends(get_db)):
-    if db.query(Student).filter(Student.email==req.email).first():
-        raise HTTPException(400,"Email already registered")
-    if db.query(Student).filter(Student.student_code==req.student_code).first():
-        raise HTTPException(400,"Student ID already exists")
-    s = Student(id=gen_id(),name=req.name,email=req.email,
-                student_code=req.student_code,hashed_password=hash_password(req.password),
-                college=req.college,branch=req.branch,semester=req.semester)
-    db.add(s); db.commit()
-    return {"message":"Account created!","student_id":s.id}
-
-@app.post("/auth/login")
-async def login(req:LoginReq, db:Session=Depends(get_db)):
-    s = db.query(Student).filter(Student.email==req.email).first()
-    if not s or not verify_password(req.password, s.hashed_password):
-        raise HTTPException(401,"Invalid email or password")
-    token = create_token({"sub":s.id,"name":s.name})
-    return {"access_token":token,"token_type":"bearer",
-            "student_id":s.id,"student_name":s.name,"student_code":s.student_code}
-
-@app.post("/auth/admin/login")
-async def admin_login(req:AdminLoginReq, db:Session=Depends(get_db)):
-    a = db.query(AdminUser).filter(AdminUser.username==req.username).first()
-    if not a or not verify_password(req.password, a.hashed_password):
-        raise HTTPException(401,"Invalid admin credentials")
-    return {"access_token":create_token({"sub":req.username,"role":"admin"}),"token_type":"bearer"}
-
-# ── Exam ────────────────────────────────────────────────────────
-@app.get("/exams")
-async def list_exams(db:Session=Depends(get_db)):
-    exams = db.query(Exam).filter(Exam.is_active==True).all()
-    return [{"id":e.id,"title":e.title,"category":e.category,
-             "duration_min":e.duration_min,"total_marks":e.total_marks,
-             "description":e.description} for e in exams]
-
-@app.get("/exam/questions/{category}")
-async def get_questions(category:str):
-    qs = QUESTION_BANK.get(category, QUESTION_BANK["General Aptitude"])
-    return [{"id":q["id"],"q":q["q"],"opts":q["opts"],"marks":q["marks"]} for q in qs]
-
-@app.post("/exam/start")
-async def start_exam(req:ExamStartReq, db:Session=Depends(get_db),
-                     sid:str=Depends(get_current_user_id)):
-    stu  = db.query(Student).filter(Student.id==sid).first()
-    if not stu: raise HTTPException(404,"Student not found")
-    exam = db.query(Exam).filter(Exam.id==req.exam_id).first()
-    if not exam: raise HTTPException(404,"Exam not found")
-    active = db.query(ExamSession).filter(
-        ExamSession.student_id==sid, ExamSession.is_active==True).first()
-    if active:
-        return {"session_id":active.id,"exam_title":exam.title,
-                "exam_category":exam.category,"duration_min":exam.duration_min,
-                "student_name":stu.name,"total_marks":exam.total_marks}
-    sess_id = gen_id()
-    db.add(ExamSession(id=sess_id,student_id=sid,exam_id=req.exam_id,is_active=True))
-    db.commit()
-    init_session(sid, sess_id, stu.name, req.exam_id)
-    bgraph.add_student(sid, 0, stu.name)
-    for o in db.query(ExamSession).filter(ExamSession.exam_id==req.exam_id,
-                ExamSession.is_active==True, ExamSession.id!=sess_id).all():
-        bgraph.add_edge(sid, o.student_id)
-    return {"session_id":sess_id,"exam_title":exam.title,"exam_category":exam.category,
-            "duration_min":exam.duration_min,"student_name":stu.name,
-            "total_marks":exam.total_marks,"message":"Exam started! Good luck."}
-
-@app.post("/exam/submit")
-async def submit_exam(req:SubmitAnswersReq, db:Session=Depends(get_db),
-                      sid:str=Depends(get_current_user_id)):
-    # Calculate exam score
-    qs      = QUESTION_BANK.get(req.exam_id, [])
-    # Try category match
-    exam    = db.query(Exam).filter(Exam.id==req.exam_id).first()
-    if exam:
-        qs = QUESTION_BANK.get(exam.category, [])
-    exam_score = 0
-    for q in qs:
-        ans = req.answers.get(str(q["id"]))
-        if ans is not None and int(ans) == q["ans"]:
-            exam_score += q["marks"]
-
-    dbsess = db.query(ExamSession).filter(
-        ExamSession.student_id==sid, ExamSession.is_active==True).first()
-    if dbsess:
-        dbsess.exam_score = exam_score
-        dbsess.answers    = json.dumps(req.answers)
-        db.commit()
-
-    result = finalize(sid, db)
-    if not result: raise HTTPException(404,"No active session")
-    bgraph.update_score(sid, result.get("score",0))
-    return {**result,"exam_score":exam_score,"clusters":bgraph.all_clusters(),
-            "message":"Exam submitted successfully!"}
-
-@app.post("/analyze/frame")
-async def analyze_webcam(req:FrameReq, db:Session=Depends(get_db)):
-    det = analyze_frame(req.frame_b64)
-    for ev in det.get("events",[]):
-        if ev != "face_ok":
-            await pipeline(req.student_id, ev, f"Frame:{ev}", time.time(), db)
-    return det
-
-# ── Admin ────────────────────────────────────────────────────────
-@app.get("/admin/live")
-async def live():
-    return [{"student_id":sid,"student_name":s["name"],"score":s["score"],
-             "tab_switches":s["tabs"],"minimizes":s["mins"],"face_missing":s["faces"],
-             "phone_det":s["phone"],"head_turns":s["head"],
-             "verdict":"⚠️ SUSPICIOUS" if s["score"]>=10 else "✅ CLEAN"}
-            for sid,s in sessions.items() if s.get("active")]
-
-@app.get("/admin/report/{exam_id}")
-async def exam_report(exam_id:str, db:Session=Depends(get_db)):
-    return build_exam_summary(exam_id, db)
-
-@app.get("/admin/leaderboard")
-async def leaderboard(): return vheap.get_ranked()
-
-@app.get("/admin/clusters")
-async def clusters(): return bgraph.all_clusters()
-
-@app.post("/admin/exam/create")
-async def create_exam(req:CreateExamReq, db:Session=Depends(get_db)):
-    e = Exam(id=gen_id(),title=req.title,category=req.category,
-             description=req.description,duration_min=req.duration_min,
-             total_marks=req.total_marks,pass_marks=req.pass_marks,is_active=True)
-    db.add(e); db.commit()
-    return {"message":"Exam created","exam_id":e.id}
-
-@app.get("/admin/students")
-async def all_students(db:Session=Depends(get_db)):
-    students = db.query(Student).all()
-    result = []
-    for s in students:
-        latest = db.query(ExamSession).filter(ExamSession.student_id==s.id).order_by(
-            ExamSession.started_at.desc()).first()
-        result.append({"id":s.id,"name":s.name,"email":s.email,
-                        "student_code":s.student_code,"college":s.college,
-                        "branch":s.branch,"total_exams":
-                        db.query(ExamSession).filter(ExamSession.student_id==s.id).count(),
-                        "last_verdict":latest.verdict if latest else "N/A"})
-    return result
-
-# ── WebSocket ────────────────────────────────────────────────────
-@app.websocket("/ws/{student_id}")
-async def student_ws(websocket:WebSocket, student_id:str):
-    await websocket.accept()
-    student_ws_map[student_id] = websocket
-    try:
-        while True:
-            raw  = await websocket.receive_text()
-            data = json.loads(raw)
-            db   = next(get_db())
-            res  = await pipeline(student_id, data.get("event","unknown"),
-                                  data.get("details",""), data.get("timestamp",time.time()), db)
-            await websocket.send_json({"status":"ok","score":res.get("total_score",0)})
-    except WebSocketDisconnect:
-        student_ws_map.pop(student_id, None)
-
-@app.websocket("/ws/admin/live")
-async def admin_ws(websocket:WebSocket):
-    await websocket.accept()
-    admin_ws_list.append(websocket)
-    try:
-        await websocket.send_json({"type":"connected","msg":"Admin live connected"})
-        while True: await websocket.receive_text()
-    except WebSocketDisconnect:
-        if websocket in admin_ws_list: admin_ws_list.remove(websocket)
-
 # ═══════════════════════════════════════════════════════════════════════
 # SECTION 13 — STUDENT HTML
 # ═══════════════════════════════════════════════════════════════════════
@@ -991,18 +796,39 @@ STUDENT_HTML = None  # legacy (moved to ui/student.html)
 # ═══════════════════════════════════════════════════════════════════════
 ADMIN_HTML = None  # legacy (moved to ui/admin.html)
 
-# ═══════════════════════════════════════════════════════════════════════
-# SECTION 15 — SERVE PAGES + RUN
-# ═══════════════════════════════════════════════════════════════════════
-@app.get("/student", response_class=HTMLResponse)
-async def student_page(): return load_ui_page("student.html")
+deps = RouteDeps(
+    # DB
+    get_db=get_db,
+    # Models
+    Student=Student,
+    Exam=Exam,
+    ExamSession=ExamSession,
+    Violation=Violation,
+    AdminUser=AdminUser,
+    # Auth
+    hash_password=hash_password,
+    verify_password=verify_password,
+    create_token=create_token,
+    get_current_user_id=get_current_user_id,
+    # Exam/logic
+    gen_id=gen_id,
+    QUESTION_BANK=QUESTION_BANK,
+    init_session=init_session,
+    finalize=finalize,
+    build_exam_summary=build_exam_summary,
+    analyze_frame=analyze_frame,
+    pipeline=pipeline,
+    # State
+    sessions=sessions,
+    admin_ws_list=admin_ws_list,
+    student_ws_map=student_ws_map,
+    vheap=vheap,
+    bgraph=bgraph,
+    # UI
+    load_ui_page=load_ui_page,
+)
 
-@app.get("/admin", response_class=HTMLResponse)
-async def admin_page(): return load_ui_page("admin.html")
-
-@app.get("/", response_class=HTMLResponse)
-async def root():
-    return load_ui_page("index.html")
+register_routes(app, deps)
 
 
 if __name__ == "__main__":
