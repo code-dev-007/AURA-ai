@@ -2,11 +2,35 @@
 
 **AI-powered exam proctoring** app with a built-in **Student Portal** + **Admin Dashboard**, real-time WebSocket events, and a SQLite database.
 
+
+# User Interface(UI)
+image.png
+
 ## Quick start
 
 ### Prerequisites
 - **Python 3.10+**
 - A working webcam (for proctoring signals)
+
+## Project structure (updated)
+
+```text
+Aura AI Proctor Exam/
+├─ app.py                      # FastAPI app + core logic (DB, auth helpers, DSA, pipeline, UI loader)
+├─ routes/
+│  ├─ __init__.py               # register_routes(app, deps)
+│  ├─ deps.py                   # RouteDeps container (injects app.py funcs/state into routers)
+│  ├─ schemas.py                # Pydantic request schemas (moved from app.py)
+│  ├─ auth.py                   # /auth/* endpoints
+│  ├─ exam.py                   # /exams, /exam/*, /analyze/frame endpoints
+│  ├─ admin.py                  # /admin/* endpoints
+│  ├─ ws.py                     # WebSocket endpoints (/ws/*)
+│  └─ pages.py                  # HTML page routes: /, /student, /admin
+└─ ui/
+   ├─ index.html
+   ├─ student.html
+   └─ admin.html
+```
 
 ### Install
 
