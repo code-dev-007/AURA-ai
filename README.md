@@ -4,7 +4,10 @@
 
 
 # User Interface(UI)
-image.png
+<img width="933" height="721" alt="image" src="https://github.com/user-attachments/assets/8ae0622e-450f-411a-aad0-ed2d0172a991" />
+<img width="1294" height="944" alt="image" src="https://github.com/user-attachments/assets/c27f0656-ec0a-4f1f-9422-36924eb9bb22" />
+<img width="1919" height="948" alt="image" src="https://github.com/user-attachments/assets/9011d933-da2e-4507-bcb7-45b206688a95" />
+
 
 ## Quick start
 
