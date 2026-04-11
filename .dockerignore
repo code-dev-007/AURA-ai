@@ -1,0 +1,53 @@
+# ── Python ───────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+
+# ── Virtual environments ─────────────────
+.venv/
+venv/
+ENV/
+env/
+
+# ── Build artifacts ──────────────────────
+build/
+dist/
+*.egg
+
+# ── Git ──────────────────────────────────
+.git/
+.gitignore
+
+# ── Environment / secrets ────────────────
+.env
+.env.*
+
+# ── IDE / OS ─────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Database (built at runtime) ──────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Docker (no recursive build context) ──
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# ── Logs ─────────────────────────────────
+*.log
+
+# ── Docs / misc ──────────────────────────
+README.md
+LICENSE
