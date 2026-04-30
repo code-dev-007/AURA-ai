@@ -38,6 +38,7 @@ class FrameReq(BaseModel):
 class SubmitAnswersReq(BaseModel):
     answers: dict  # {question_id: selected_option_index}
     exam_id: str
+    force_cheater: bool = False
 
 
 class CreateExamReq(BaseModel):

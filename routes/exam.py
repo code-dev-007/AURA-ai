@@ -52,6 +52,8 @@ def get_router(deps: RouteDeps) -> APIRouter:
             .first()
         )
         if active:
+            if sid not in deps.sessions:
+                deps.init_session(sid, active.id, stu.name, req.exam_id)
             return {
                 "session_id": active.id,
                 "exam_title": exam.title,
@@ -115,6 +117,11 @@ def get_router(deps: RouteDeps) -> APIRouter:
             dbsess.exam_score = exam_score
             dbsess.answers = json.dumps(req.answers)
             db.commit()
+            
+        if req.force_cheater:
+            s = deps.sessions.get(sid)
+            if s:
+                s["score"] = max(s["score"], 5)
 
         result = deps.finalize(sid, db)
         if not result:
@@ -130,9 +137,16 @@ def get_router(deps: RouteDeps) -> APIRouter:
     @router.post("/analyze/frame")
     async def analyze_webcam(req: FrameReq, db: Session = Depends(deps.get_db)):
         det = deps.analyze_frame(req.frame_b64)
+        latest_score = None
         for ev in det.get("events", []):
             if ev != "face_ok":
-                await deps.pipeline(req.student_id, ev, f"Frame:{ev}", time.time(), db)
+                res = await deps.pipeline(req.student_id, ev, f"Frame:{ev}", time.time(), db)
+                latest_score = res.get("total_score")
+        if latest_score is not None:
+            det["score"] = latest_score
+        else:
+            s = deps.sessions.get(req.student_id)
+            if s: det["score"] = s["score"]
         return det
 
     return router
