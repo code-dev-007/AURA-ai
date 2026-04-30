@@ -278,7 +278,7 @@ class BehaviorGraph:
         if b not in self.graph[a]: self.graph[a].append(b)
         if a not in self.graph[b]: self.graph[b].append(a)
 
-    def bfs_cluster(self, start, threshold=15):
+    def bfs_cluster(self, start, threshold=5):
         if self.scores.get(start, 0) < threshold: return []
         visited, q, flagged = set(), deque([start]), []
         while q:
@@ -292,7 +292,7 @@ class BehaviorGraph:
                     if nb not in visited: q.append(nb)
         return flagged
 
-    def all_clusters(self, threshold=15):
+    def all_clusters(self, threshold=5):
         visited, clusters = set(), []
         for sid in self.scores:
             if sid not in visited and self.scores[sid] >= threshold:
@@ -325,7 +325,7 @@ class ViolationHeap:
                 seen.add(sid)
                 s = -neg
                 result.append({"student_id": sid, "name": name, "score": s,
-                               "verdict": "CHEATER" if s >= 15 else "NOT CHEATER"})
+                               "verdict": "CHEATER" if s >= 5 else "NOT CHEATER"})
         return result
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -358,14 +358,15 @@ class SlidingWindow:
 WEIGHTS = {
     "tab_switch":3,"window_minimize":2,"blur":1,"face_missing":5,
     "multiple_faces":8,"phone_detected":10,"second_screen":11,
-    "head_turn_left":3,"head_turn_right":3,"audio_spike":4,
+    "head_turn_left":3,"head_turn_right":3,"head_turned":4,"audio_spike":4,
+    "shortcut_blocked":2,"attempt_leave":4,
     "rapid_tab_switching":10,"tab_escape_attempt":7,"repeated_minimize":6,
     "prolonged_absence":9,"collaboration_attempt":12,"distraction_pattern":5,
     "phone_cheat_attempt":11,"second_device_cheat":13,"looking_at_notes":7,
     "systematic_cheat_sequence":15,"switcher_with_helper":14,
     "phone_tab_combo":12,"persistent_left_gaze":8,
 }
-THRESHOLD = 15
+THRESHOLD = 5
 
 def compute_score(v): return sum(WEIGHTS.get(x, 1) for x in v)
 def get_verdict(s):   return "CHEATER" if s >= THRESHOLD else "NOT CHEATER"
@@ -374,12 +375,15 @@ def describe(e):
         "tab_switch":"Student switched browser tab",
         "window_minimize":"Student minimized exam window",
         "blur":"Exam window lost focus",
+        "shortcut_blocked":"Forbidden shortcut attempted during exam",
+        "attempt_leave":"Student attempted to leave/close the exam page",
         "face_missing":"No face detected in webcam",
         "multiple_faces":"Multiple faces — possible collaboration",
         "phone_detected":"Smartphone detected in camera frame",
         "second_screen":"Secondary screen/laptop detected",
         "head_turn_left":"Student looking sharply left",
         "head_turn_right":"Student looking sharply right",
+        "head_turned":"Student turned head away from screen",
         "rapid_tab_switching":"Burst of rapid tab switches",
         "collaboration_attempt":"External collaboration detected",
         "prolonged_absence":"Face absent for extended time",
@@ -444,7 +448,9 @@ def analyze_frame(b64):
         elif total>=2: res["events"].append("multiple_faces")
         elif len(faces)==1:
             d = head_dir(frame, faces[0])
-            if d in ("head_turn_left","head_turn_right"): res["events"].append(d)
+            if d in ("head_turn_left","head_turn_right","head_turned"): res["events"].append(d)
+        elif len(profs)>=1 and len(faces)==0:
+            res["events"].append("head_turned")
         if detect_phone(frame): res["phone"]=True; res["events"].append("phone_detected")
         if detect_glow(frame):  res["screen"]=True; res["events"].append("second_screen")
         if not res["events"]: res["events"].append("face_ok")
@@ -499,7 +505,7 @@ async def pipeline(sid, etype, details, ts, db):
         elif etype=="face_missing":    s["faces"] +=1
         elif etype=="multiple_faces":  s["mfaces"]+=1
         elif etype=="phone_detected":  s["phone"] +=1
-        elif etype in("head_turn_left","head_turn_right"): s["head"]+=1
+        elif etype in("head_turn_left","head_turn_right","head_turned"): s["head"]+=1
 
     if s["sw"].is_burst(etype):                     # Step 4: Burst check
         burst = f"rapid_{etype}"
@@ -749,13 +755,14 @@ async def lifespan(app):
                         duration_min=dur,total_marks=tm*5,pass_marks=pm,is_active=True))
         db.commit()
     print("\n" + "="*60)
-    print("  ✅  AURA AI v2.0 started!")
-    print("  🌐  Home            : http://localhost:8000/")
-    print("  🎓  Student Portal  : http://localhost:8000/student")
-    print("  🛡️   Admin Dashboard : http://localhost:8000/admin")
-    print("  📖  API Docs        : http://localhost:8000/docs")
-    print("  🔑  Admin Login     : admin / admin123")
-    print("  📚  Exams Available : 5 exam types loaded")
+    # Keep banner ASCII-only for Windows console compatibility.
+    print("  AURA AI v2.0 started!")
+    print("  Home            : http://localhost:8000/")
+    print("  Student Portal  : http://localhost:8000/student")
+    print("  Admin Dashboard : http://localhost:8000/admin")
+    print("  API Docs        : http://localhost:8000/docs")
+    print("  Admin Login     : admin / admin123")
+    print("  Exams Available : 5 exam types loaded")
     print("="*60 + "\n")
     yield
     # Shutdown (nothing needed)
